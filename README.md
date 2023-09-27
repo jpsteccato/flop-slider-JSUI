@@ -1,5 +1,7 @@
 # three-slider.js - JSUI by steech (joe steccato)
 
+*for use with Max/MSP*
+
 a JSUI version of ll.slishi.maxpat by klaus filip
 
 - this slider provides three different sliders for controlling a single value
