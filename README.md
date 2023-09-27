@@ -1,6 +1,10 @@
 # three-slider.js - JSUI by steech (joe steccato)
 
-*for use with Max/MSP*
+![image](images/image01.png)
+
+*for use as a Max/MSP JSUI*
+
+Please also download [jsHelpers.js](https://github.com/jpsteccato/jsHelpers)
 
 a JSUI version of ll.slishi.maxpat by klaus filip
 
