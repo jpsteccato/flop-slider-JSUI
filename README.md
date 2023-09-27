@@ -4,7 +4,7 @@
 
 *for use as a Max/MSP JSUI*
 
-Please also download [jsHelpers.js](https://github.com/jpsteccato/jsHelpers)
+Requires [jsHelpers.js](https://github.com/jpsteccato/jsHelpers)
 
 a JSUI version of ll.slishi.maxpat by klaus filip
 
