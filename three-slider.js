@@ -2,7 +2,7 @@
 * @Author: josephsteccato
 * @Date:   2023-09-24 14:47:08
 * @Last Modified by:   josephsteccato
-* @Last Modified time: 2023-09-29 16:49:30
+* @Last Modified time: 2023-09-29 18:05:50
 
     "three-slider.js" - JSUI by steech (joe steccato)
 
@@ -20,6 +20,7 @@
 
     ** requires jsHelpers.js **
 */
+
 autowatch = 1;
 outlets = 2;
 
@@ -290,20 +291,14 @@ function setAttributesFromArgs(){
 
 // Check formatting & reformat color attributes (if necessary)
 function checkAttributes(){
-    if(typeof ATTR.bgcolor !== "object"){
-        var color = parseColor(ATTR.bgcolor)
+    var checkColors = ['bgcolor', 'bordercolor']
+    
+    for(var i=0; i<checkColors.length; i++){
+        var color = parseColor(ATTR[checkColors[i]])
         if(color){
-            ATTR.bgcolor = color
+            ATTR[checkColors[i]] = color
         }else{
-            ATTR.bgcolor = DEFAULT_ATTR.bgcolor
-        }
-    }
-    if(typeof ATTR.bordercolor !== "object"){
-        var color = parseColor(ATTR.bordercolor)
-        if(color){
-            ATTR.bordercolor = color
-        }else{
-            ATTR.bordercolor = DEFAULT_ATTR.bordercolor
+            ATTR[checkColors[i]] = DEFAULT_ATTR[checkColors[i]]
         }
     }
 }
