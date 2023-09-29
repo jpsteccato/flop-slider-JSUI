@@ -2,7 +2,7 @@
 * @Author: josephsteccato
 * @Date:   2023-09-24 14:47:08
 * @Last Modified by:   josephsteccato
-* @Last Modified time: 2023-09-27 14:11:47
+* @Last Modified time: 2023-09-29 16:49:30
 
     "three-slider.js" - JSUI by steech (joe steccato)
 
@@ -31,11 +31,13 @@ var DEFAULT_ATTR = {
     max: 10000,
 
     coarse_scale: .05,
-    medium_scale: .8,
-    fine_scale: 1.8,
+    medium_scale: 1,
+    fine_scale: 1,
 
     bgcolor: [1,1,1,1],
     bordercolor: [0,0,0,1],
+
+    output_mode: 0 // 0 for "set" mode
 }
 
 // clone the DEFAULT_ATTR
@@ -52,13 +54,16 @@ var height = box.rect[3] - box.rect[1];
 var borderAmount = width/24;
 
 var value = 0.0;   // Starting value in the middle
+
 var coarse = 0.0;  // 0 to 10, multiply by 100 for actual change
 var medium = 0.0;  // 0 to 10, multiply by 10 for actual change
 var fine = 0.0;    // 0 to 10, multiply by 1 for actual change
 
-var cursorHidden = false;
-var currentMousePosition = 0 // y only
-var mouseDelta = 0
+var mouseStart = 0     // y only
+var mouseDelta = 0     // total change for mouse position in a "drag"
+var mouseCoords = null // 
+
+var sliderStartAmount = 0;
 
 
 /* INLET MESSAGES */
@@ -73,15 +78,14 @@ function set(newValue){
 
 function msg_float(newValue){
     set(newValue)
-    outlet(0, value);
+    if(ATTR.output_mode == 0){
+        outlet(0, value);
+    }
 }
 
 function msg_int(newValue){ 
     msg_float(newValue) 
 }
-
-function min(newMin) { ATTR.min = newMin }
-function max(newMax) { ATTR.max = newMax }
 
 function bgcolor() { 
     var arr = arrayfromargs(messagename, arguments); 
@@ -102,11 +106,13 @@ function paint() {
     mgraphics.rectangle(-1, -1, width+1, height+1);
     mgraphics.fill();
 
+    // Calc individual slider values
     var vfine = value % 1.;
     var vmedium = value % 100.;
+    var vcoarse = (value - ATTR.min) / (ATTR.max - ATTR.min);
 
     // Draw sliders
-    drawSlider(0.0, width * 0.5, (value / ATTR.max), false);
+    drawSlider(0.0, width * 0.5, vcoarse, false);
     drawSlider(0.5, (width * 0.25) + borderAmount, vmedium / 100., false);
     drawSlider(0.75, (width * 0.25), vfine, true);
 }
@@ -119,42 +125,71 @@ function onresize(w, h) {
 }
 
 function onclick(x, y, button, cmd, shift, capslock, option, ctrl) {
-    currentMousePosition = y
+    // Init drag-state variables
+    mouseStart = y
     mouseDelta = 0
     currentSlider = getSliderFromPosition(x)
 
+    // Init separated values
     fine = value % 1;                      // Decimal part
     medium = (value - fine) % 100;         // Number between 1 and 100
     coarse = value - medium - fine;        // Everything 100 and over    
 
-    handleMouse(y)
-    outlet(1, 'hide')
+    // Set slider start amount (between 0..1)
+    sliderStartAmount = 1 - (mouseStart / height);
+
+    handleMouse()
+    max.hidecursor();
+    outlet(1, 'bang')
 }
 
 function ondrag(x, y, button, cmd, shift, capslock, option, ctrl) {
-    mouseDelta += y - currentMousePosition
+    // Button is released
+    if(!button){
+        mouseDelta = 0;
+        mouseStart = 0;
+        mouseCoords = null;
+        
+        max.showcursor();
+        return;
+    }
 
-    if(button == 0){
-        currentSlider = -1;
-        cursorHidden = 0;
-        currentSliderLoop = 0;
-        outlet(1, 'show')
+    // Make sure mouseCoords have been set from outside JSUI ("mousestate" Max obj)
+    //    if not, wait for next "ondrag"
+    if(mouseCoords == null){
+        return;
+    }else{
+        // Update cursor position to original position (from 'onclick')
+        max.pupdate(mouseCoords[0], mouseCoords[1]);
     }
-    if((mouseDelta) == 0){
-        return
+
+    // If value is min or max, ignore dragging down or up respectively
+    if(
+        (value <= ATTR.min && (y - mouseStart > 0)) ||
+        (value >= ATTR.max && (y - mouseStart < 0))
+    ){
+        return;
     }
-    handleMouse(y)
-    outlet(1, 'update')
+
+    var mouseChange = y - mouseStart;
+    // Hacky method for overzealous scrolling...
+    if(Math.abs(mouseChange) > 1 && mouseDelta === 0){
+        mouseChange = 1
+        mouseChange *= Math.abs(mouseChange) / mouseChange;
+    }
+
+    // Get distance for this drag and append to mouseDelta
+    mouseDelta += mouseChange;
+    handleMouse();
 }
 
 // Handle mouse movement, setting value for current selected slider
-function handleMouse(y) {
-    var sliderAmount = ((mouseDelta/currentMousePosition) - 1) * -1
-    var sliderStartAmount = 1 - (currentMousePosition / height);
+function handleMouse() {
+    var sliderAmount = ((mouseDelta/mouseStart) - 1) * -1
 
     if(currentSlider == 0) {
         sliderAmount *= ATTR.coarse_scale
-        coarse = roundDownTo(ATTR.max * (sliderAmount + sliderStartAmount), 100) + ATTR.min;
+        coarse = roundDownTo((ATTR.max - ATTR.min) * (sliderAmount + sliderStartAmount), 100) + ATTR.min;
     }
     if(currentSlider == 1) {
         sliderAmount *= ATTR.medium_scale
@@ -240,15 +275,16 @@ function setAttributesFromArgs(){
     var unknown = []
 
     for(var i=0; i<keys.length; i++){
-        if(ATTR[keys[i]]){
+        if(ATTR[keys[i]] !== undefined){
             ATTR[keys[i]] = parsedAttributes[keys[i]]
         }else{
             unknown.push(keys[i])
         }
     }
     if(unknown.length){
-        console.error("Some arguments not recognized: '" + unknown.join(", ") + "'")
+        console.error("some arguments not recognized: '" + unknown.join(", ") + "'")
     }
+
     checkAttributes()
 }
 
@@ -273,4 +309,17 @@ function checkAttributes(){
 }
 
 // Catch-all
-function anything(msg){ console.error("doesn't understand '" + messagename + "'") }
+function anything(){ 
+    if(
+        messagename === 'max' || 
+        messagename === 'min' ||
+        messagename === 'output_mode'
+    ){
+        ATTR[messagename] = arguments[0]
+        mgraphics.redraw();
+    }else if(messagename === 'setCoords'){
+        mouseCoords = [arguments[0], arguments[1]]
+    }else{
+        console.error("doesn't understand '" + messagename + "'") 
+    }
+}
