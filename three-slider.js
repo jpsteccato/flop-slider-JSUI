@@ -2,7 +2,7 @@
 * @Author: josephsteccato
 * @Date:   2023-09-24 14:47:08
 * @Last Modified by:   josephsteccato
-* @Last Modified time: 2023-09-29 18:05:50
+* @Last Modified time: 2023-10-02 10:29:34
 
     "three-slider.js" - JSUI by steech (joe steccato)
 
@@ -294,7 +294,7 @@ function checkAttributes(){
     var checkColors = ['bgcolor', 'bordercolor']
     
     for(var i=0; i<checkColors.length; i++){
-        var color = parseColor(ATTR[checkColors[i]])
+        var color = parseColor(ATTR[checkColors[i]].join(' '))
         if(color){
             ATTR[checkColors[i]] = color
         }else{
