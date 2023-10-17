@@ -2,7 +2,7 @@
 * @Author: josephsteccato
 * @Date:   2023-09-24 14:47:08
 * @Last Modified by:   josephsteccato
-* @Last Modified time: 2023-10-02 10:29:34
+* @Last Modified time: 2023-10-17 10:49:39
 
     "three-slider.js" - JSUI by steech (joe steccato)
 
@@ -66,6 +66,7 @@ var mouseCoords = null //
 
 var sliderStartAmount = 0;
 
+var ppooll_global = new Global("ppooll");
 
 /* INLET MESSAGES */
 function bang(){
@@ -140,7 +141,11 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl) {
     sliderStartAmount = 1 - (mouseStart / height);
 
     handleMouse()
-    max.hidecursor();
+
+    if(!ppooll_global.flop_disable_cursor){
+        max.hidecursor();
+    }
+
     outlet(1, 'bang')
 }
 
@@ -248,13 +253,13 @@ function roundDownTo(value, round) {
 
 // Determine which slider user has focused in onclick method
 function getSliderFromPosition(x){
-	if (x >= 0.0 && (x < (0.5 * width))) {
-		return 0 // coarse
-	} else if ((x >= (0.5 * width)) && (x < (0.75 * width))) {
-		return 1 // medium
-	} else if ((x >= (0.75 * width)) && (x < (1. * width))) {
-		return 2 // fine
-	}
+    if (x >= 0.0 && (x < (0.5 * width))) {
+        return 0 // coarse
+    } else if ((x >= (0.5 * width)) && (x < (0.75 * width))) {
+        return 1 // medium
+    } else if ((x >= (0.75 * width)) && (x < (1. * width))) {
+        return 2 // fine
+    }
 }
 
 // Parse color from inlet message and set attribute
